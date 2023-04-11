@@ -12,6 +12,21 @@ type accountUsecase struct {
 	accountRepo interfaces.AccountRepository
 }
 
+// Delete implements interfaces.AccountUsecase
+func (cr *accountUsecase) Delete(ctx context.Context, id int64) error {
+	err := cr.accountRepo.Delete(ctx,id)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// FindAllByUserID implements interfaces.AccountUsecase
+func (c *accountUsecase) FindAllByUserID(ctx context.Context, id uint) ([]domain.Accounts, error) {
+	accounts, err := c.accountRepo.FindAllByUserID(ctx, id)
+	return accounts, err
+}
+
 // UpdateAccount implements interfaces.AccountUsecase
 func (c *accountUsecase) UpdateAccount(ctx context.Context, account domain.Accounts, id int64) (domain.Accounts, error) {
 	// Update Account

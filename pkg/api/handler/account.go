@@ -163,11 +163,50 @@ func (cr *AccountHandler) UpdateAccount(ctx context.Context, req *pb.UpdateAccou
 }
 
 func (cr *AccountHandler) DeleteAccount(ctx context.Context, req *pb.DeleteAccountRequest) (*pb.DeleteAccountResponse, error) {
+	fmt.Println("delete account called in service")
+	// Check if the ID is not empty or invalid
+	if req.Id == 0 {
+		return &pb.DeleteAccountResponse{
+			Status: http.StatusBadRequest,
+			Error:  "Invalid ID",
+			Id:     0,
+		}, nil
+	}
+
+	var account domain.Accounts
+
+	// Check if the record exists in the database
+	account, err := cr.accountUsecase.FindByID(ctx, uint(req.Id))
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return &pb.DeleteAccountResponse{
+				Status: http.StatusNotFound,
+				Error:  "Record not found",
+				Id:     0,
+			}, nil
+		} else {
+			return &pb.DeleteAccountResponse{
+				Status: http.StatusInternalServerError,
+				Error:  fmt.Sprint(errors.New("unable to fetch account")),
+				Id:     0,
+			}, nil
+		}
+	}
+
+	// Delete the record from the database
+	err = cr.accountUsecase.Delete(ctx, int64(req.Id))
+	if err != nil {
+		return &pb.DeleteAccountResponse{
+			Status: http.StatusInternalServerError,
+			Error:  fmt.Sprint(errors.New("error in deleting data")),
+			Id:     0,
+		}, nil
+	}
 
 	return &pb.DeleteAccountResponse{
-		Status: http.StatusCreated,
+		Status: http.StatusOK,
 		Error:  "",
-		Id:     0,
+		Id:     int64(account.AccountID),
 	}, nil
 }
 
@@ -182,11 +221,36 @@ func (cr *AccountHandler) GetBalance(ctx context.Context, req *pb.GetBalanceRequ
 }
 
 func (cr *AccountHandler) GetAccounts(ctx context.Context, req *pb.GetAccountsRequest) (*pb.GetAccountsResponse, error) {
+	// Get all users from the use case
+	accounts, err := cr.accountUsecase.FindAllByUserID(ctx,uint(req.Id))
+	if err != nil {
+		return &pb.GetAccountsResponse{
+			Status:   http.StatusUnprocessableEntity,
+			Error:    fmt.Sprint(errors.New("unable to fetch data")),
+			Accounts: []*pb.FindAccountData{},
+		}, errors.New(err.Error())
+	}
 
+	// Convert domain.Users to pb.User
+	var pbAccounts []*pb.FindAccountData
+	for _, account := range accounts {
+		atype := fmt.Sprint(account.AccountType)
+		pbAccount := &pb.FindAccountData{
+			Id:            int64(account.AccountID),
+			AccountHolder: account.AccountHolder,
+			AccountNumber: int64(account.AccountNumber),
+			UserId:        int64(account.UserID),
+			CreatedAt:     account.CreatedAt.String(),
+			Type:          atype,
+		}
+		pbAccounts = append(pbAccounts, pbAccount)
+	}
+
+	// Return the response
 	return &pb.GetAccountsResponse{
-		Status:   http.StatusCreated,
+		Status:   http.StatusOK,
 		Error:    "",
-		Accounts: []*pb.AccountData{},
+		Accounts: pbAccounts,
 	}, nil
 }
 

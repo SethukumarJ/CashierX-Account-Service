@@ -52,6 +52,7 @@ message FindAccountResponse {
 // Update Account
 
 message UpdateAccountRequest {
+    int64 id = 1;
     string type = 2;
     int64 balance = 3;
   }
@@ -78,7 +79,7 @@ message GetAccountsRequest { int64 id = 1; }
 message GetAccountsResponse {
   int64 status = 1;
   string error = 2;
-  repeated AccountData accounts = 3;
+  repeated FindAccountData accounts = 3;
 }
 
 message AccountData {
