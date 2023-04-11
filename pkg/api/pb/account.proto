@@ -38,6 +38,7 @@ message FindAccountData {
   int64 account_number = 3;
   int64 user_id = 4;
   string created_at = 5;
+  string type = 6;
 }
 
 message FindAccountRequest { int64 id = 1; }
