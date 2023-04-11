@@ -213,10 +213,37 @@ func (cr *AccountHandler) DeleteAccount(ctx context.Context, req *pb.DeleteAccou
 // Get Balance
 func (cr *AccountHandler) GetBalance(ctx context.Context, req *pb.GetBalanceRequest) (*pb.GetBalanceResponse, error) {
 
+	// Check if the ID is not empty or invalid
+	if req.Id == 0 {
+		return &pb.GetBalanceResponse{
+			Status:  http.StatusBadRequest,
+			Error:   "Invalid ID",
+			Balance: 0,
+		}, nil
+	}
+
+	// Check if the record exists in the database
+	account, err := cr.accountUsecase.FindByID(ctx, uint(req.Id))
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return &pb.GetBalanceResponse{
+				Status:  http.StatusNotFound,
+				Error:   "Record not found",
+				Balance: 0,
+			}, nil
+		} else {
+			return &pb.GetBalanceResponse{
+				Status:  http.StatusInternalServerError,
+				Error:   fmt.Sprint(errors.New("unable to fetch account")),
+				Balance: 0,
+			}, nil
+		}
+	}
+	accBalance := float32(account.Balance)
 	return &pb.GetBalanceResponse{
-		Status:  http.StatusCreated,
+		Status:  http.StatusOK,
 		Error:   "",
-		Balance: 0,
+		Balance: accBalance,
 	}, nil
 }
 
